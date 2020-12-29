@@ -21,12 +21,19 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        viewModel.loadPresetLiveData().observe(this, {
+            Log.d("LOGGG", "приняли пакет")
+        })
+
+        viewModel.loadProgramLiveData().observe(this, {
+            Log.d("LOGGG", "приняли всю прогу")
+            viewModel.saveProgram("какое-то имя")
+
+        })
+
         button.setOnClickListener {
             viewModel.loadProgram()
         }
-
-     //   viewModel.
-
     }
 
 

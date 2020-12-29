@@ -20,6 +20,6 @@ interface UdpService
     fun presetPublishSubject(): Observable<PresetModel>
 
 
-    fun loadProgram()
+    fun loadPreset(loading_preset_number: Int)
 
 }
