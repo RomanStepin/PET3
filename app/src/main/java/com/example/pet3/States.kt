@@ -4,4 +4,5 @@ enum class States {
     HEARTBEAT,
     LAMPS_FINDING,
     DOWNLOADING_PROGRAM,
+    UPLOADING_PROGRAM
 }

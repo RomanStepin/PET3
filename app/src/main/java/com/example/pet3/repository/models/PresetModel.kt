@@ -3,6 +3,7 @@ package com.example.pet3.repository.models
 import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.PrimaryKey
+import fito.Fito
 import fito.FitoParam
 
 @Entity
@@ -31,5 +32,15 @@ class PresetModel constructor() {
 
     public fun addConfig(config: ConfigModel) {
         configs = configs.plus(config)
+    }
+
+    public fun toProtoClass(): FitoParam.Preset {
+        var preset: FitoParam.Preset = FitoParam.Preset.newBuilder().also {
+            it.duration = duration
+            it.presetNumber = number_in_program
+            it.presetsCount = presets_count
+        }.build()
+
+        return preset
     }
 }

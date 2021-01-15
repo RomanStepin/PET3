@@ -27,8 +27,10 @@ public class UdpServiceImpl (val app: App, val socket: DatagramSocket): UdpServi
     lateinit var presetModel: PresetModel
     lateinit var messageUdp: Fito.MessageUnion
     private var isUsing = true
+    var clientSocket = DatagramSocket().also { it.broadcast = true }
 
-    var presetPublishSubject: PublishSubject<PresetModel> = PublishSubject.create()
+    var downloadPresetPublishSubject: PublishSubject<PresetModel> = PublishSubject.create()
+    var uploadPresetPublishSubject: PublishSubject<PresetModel> = PublishSubject.create()
 
     var broadcastAddress: InetAddress
         get() {
@@ -52,8 +54,6 @@ public class UdpServiceImpl (val app: App, val socket: DatagramSocket): UdpServi
     }
 
     override fun startUdpReceiver() {
-        Log.d("LOGGG", "|||||")
-        Log.d("LOGGG", "startUdpReceiver()")
        Observable.fromCallable {
            val buf = ByteArray(4096)
            val packet = DatagramPacket(buf, 4096)
@@ -62,15 +62,11 @@ public class UdpServiceImpl (val app: App, val socket: DatagramSocket): UdpServi
 
            while (isUsing) {
                socket.receive(packet)
-               Log.d("LOGGG", "|||||")
-               Log.d("LOGGG", "socket.receive(packet)")
                protoPacket = Fito.MessageUnion.parseFrom(packet.data.copyOf(packet.length))
                mainHandler.post {
                    Toast.makeText(app, protoPacket.toString(), Toast.LENGTH_SHORT).show()
                }
-             //  receivePacket.onNext(fito)
                parsePacket(protoPacket)
-
            }
             }.subscribeOn(Schedulers.io()).subscribe()
 
@@ -89,12 +85,20 @@ public class UdpServiceImpl (val app: App, val socket: DatagramSocket): UdpServi
 
     override fun parsePacket(packet: Fito.MessageUnion) {
         if (packet.param.action == FitoParam.Param.Action.GET && packet.param.preset != FitoParam.Preset.getDefaultInstance() && packet.param.preset.presetsCount != 0 && App.STATE == States.DOWNLOADING_PROGRAM) {
-            presetPublishSubject.onNext(PresetModel(packet.param.preset))
+            downloadPresetPublishSubject.onNext(PresetModel(packet.param.preset))
+        }
+        if (packet.param.action == FitoParam.Param.Action.ACK && packet.param.preset != FitoParam.Preset.getDefaultInstance() && packet.param.preset.presetsCount != 0 && App.STATE == States.UPLOADING_PROGRAM)
+        {
+
         }
     }
 
-    override fun presetPublishSubject(): Observable<PresetModel> {
-        return presetPublishSubject
+    override fun downloadPresetPublishSubject(): Observable<PresetModel> {
+        return downloadPresetPublishSubject
+    }
+
+    override fun uploadPresetPublishSubject(): Observable<PresetModel> {
+        return uploadPresetPublishSubject
     }
 
     override fun downloadPreset(loading_preset_number: Int) {
@@ -112,8 +116,6 @@ public class UdpServiceImpl (val app: App, val socket: DatagramSocket): UdpServi
             }.build()
         }.build()
 
-        val clientSocket = DatagramSocket()
-        clientSocket.broadcast = true
         val sendDataU1 = messageUdp.toByteArray()
         val sendPacketU1 = sendDataU1?.size?.let { DatagramPacket(
             sendDataU1,
@@ -122,14 +124,31 @@ public class UdpServiceImpl (val app: App, val socket: DatagramSocket): UdpServi
             4096
         ) }
         Thread {
-            Log.d("LOGGG", "|||||||||")
-            Log.d("LOGGG", "clientSocket.send(sendPacketU1)")
             clientSocket.send(sendPacketU1)
         }.start()
 
     }
 
-    override fun uploadPreset(loading_preset_number: Int) {
-        TODO("Not yet implemented")
+    override fun uploadPreset(presetModel: PresetModel, targetId: Int) {
+        messageUdp = fito.Fito.MessageUnion.newBuilder().also {
+            it.sysId = 0
+            it.targetId = targetId
+            it.param = FitoParam.Param.newBuilder().apply {
+                action = FitoParam.Param.Action.SET
+                ack = FitoParam.Param.Ack.ACK_ACCEPTED
+                preset = presetModel.toProtoClass()
+            }.build()
+        }.build()
+
+        val sendDataU1 = messageUdp.toByteArray()
+        val sendPacketU1 = sendDataU1?.size?.let { DatagramPacket(
+            sendDataU1,
+            it,
+            broadcastAddress,
+            4096
+        ) }
+        Thread {
+            clientSocket.send(sendPacketU1)
+        }.start()
     }
 }
