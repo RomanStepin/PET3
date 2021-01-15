@@ -6,27 +6,30 @@ import androidx.room.PrimaryKey
 import fito.FitoParam
 
 @Entity
-class PresetModel(var preset: FitoParam.Preset) {
-
-    @PrimaryKey(autoGenerate = true)
-    var number: Int = 0
-
-    var program_number: Int = 0
-
-    var duration: Int = preset.duration
-
-    var number_in_program: Int = preset.presetNumber
-
-    var presets_count: Int = preset.presetsCount
-
-    init {
-        preset.configsList.forEach { configs.plus(ConfigModel(it)) }
+class PresetModel constructor() {
+    constructor(preset: FitoParam.Preset) : this() {
+        duration = preset.duration
+        number_in_program = preset.presetNumber
+        presets_count= preset.presetsCount
+        preset.configsList.forEach {
+            configs = configs.plus(ConfigModel(it))
+        }
     }
+    @PrimaryKey(autoGenerate = true)
+    var number: Long = 0
+
+    var program_number: Long = 0
+
+    var duration: Int = 0
+
+    var number_in_program: Int = 0
+
+    var presets_count: Int = 0
 
     @Ignore
     var configs: Array<ConfigModel> = arrayOf()
 
     public fun addConfig(config: ConfigModel) {
-        configs.plus(config)
+        configs = configs.plus(config)
     }
 }

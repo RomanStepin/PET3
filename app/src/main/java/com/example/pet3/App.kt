@@ -8,12 +8,14 @@ class App: Application() {
 
     companion object {
         lateinit var udpServiceComponent: UdpServiceComponent
+        lateinit var repositoryComponent: RepositoryComponent
         var STATE: States = States.HEARTBEAT
         lateinit var instance: App
     }
 
     init {
         udpServiceComponent = DaggerUdpServiceComponent.builder().udpServiceModule(UdpServiceModule(this)).build()
+        repositoryComponent = DaggerRepositoryComponent.builder().repositoryModule(RepositoryModule(this)).build()
         instance = this
     }
 

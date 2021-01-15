@@ -26,6 +26,7 @@ public class UdpServiceImpl (val app: App, val socket: DatagramSocket): UdpServi
     lateinit var programModel: ProgramModel
     lateinit var presetModel: PresetModel
     lateinit var messageUdp: Fito.MessageUnion
+    private var isUsing = true
 
     var presetPublishSubject: PublishSubject<PresetModel> = PublishSubject.create()
 
@@ -45,19 +46,31 @@ public class UdpServiceImpl (val app: App, val socket: DatagramSocket): UdpServi
         Log.d("LOGGG", "sendUdpMessage")
     }
 
+    init {
+        startUdpReceiver()
+        isUsing = true
+    }
+
     override fun startUdpReceiver() {
+        Log.d("LOGGG", "|||||")
+        Log.d("LOGGG", "startUdpReceiver()")
        Observable.fromCallable {
            val buf = ByteArray(4096)
            val packet = DatagramPacket(buf, 4096)
-           var fito: Fito.MessageUnion = Fito.MessageUnion.getDefaultInstance()
+           var protoPacket: Fito.MessageUnion = Fito.MessageUnion.getDefaultInstance()
            val mainHandler = Handler(Looper.getMainLooper())
 
-           while (true) {
+           while (isUsing) {
                socket.receive(packet)
-               fito = Fito.MessageUnion.parseFrom(packet.data.copyOf(packet.length))
+               Log.d("LOGGG", "|||||")
+               Log.d("LOGGG", "socket.receive(packet)")
+               protoPacket = Fito.MessageUnion.parseFrom(packet.data.copyOf(packet.length))
                mainHandler.post {
-                   Toast.makeText(app, fito.toString(), Toast.LENGTH_SHORT).show()
+                   Toast.makeText(app, protoPacket.toString(), Toast.LENGTH_SHORT).show()
                }
+             //  receivePacket.onNext(fito)
+               parsePacket(protoPacket)
+
            }
             }.subscribeOn(Schedulers.io()).subscribe()
 
@@ -66,17 +79,17 @@ public class UdpServiceImpl (val app: App, val socket: DatagramSocket): UdpServi
 
 
     override fun stopUdpReceiver() {
-        Log.d("LOGGG", "startUdpReceiver")
+        Log.d("LOGGG", "stopUdpReceiver")
+        isUsing = false
     }
 
     override fun getWifiState() {
         Log.d("LOGGG", "getWifiState")
     }
 
-    override fun parseProto(proto: Fito.MessageUnion) {
-        if (proto.param.preset != FitoParam.Preset.getDefaultInstance()) {
-            presetModel = PresetModel(proto.param.preset)
-            presetPublishSubject.onNext(presetModel)
+    override fun parsePacket(packet: Fito.MessageUnion) {
+        if (packet.param.action == FitoParam.Param.Action.GET && packet.param.preset != FitoParam.Preset.getDefaultInstance() && packet.param.preset.presetsCount != 0 && App.STATE == States.DOWNLOADING_PROGRAM) {
+            presetPublishSubject.onNext(PresetModel(packet.param.preset))
         }
     }
 
@@ -84,7 +97,7 @@ public class UdpServiceImpl (val app: App, val socket: DatagramSocket): UdpServi
         return presetPublishSubject
     }
 
-    override fun loadPreset(loading_preset_number: Int) {
+    override fun downloadPreset(loading_preset_number: Int) {
         messageUdp = fito.Fito.MessageUnion.newBuilder().apply {
             sysId = 0
             targetId = 1
@@ -109,8 +122,14 @@ public class UdpServiceImpl (val app: App, val socket: DatagramSocket): UdpServi
             4096
         ) }
         Thread {
+            Log.d("LOGGG", "|||||||||")
+            Log.d("LOGGG", "clientSocket.send(sendPacketU1)")
             clientSocket.send(sendPacketU1)
         }.start()
 
+    }
+
+    override fun uploadPreset(loading_preset_number: Int) {
+        TODO("Not yet implemented")
     }
 }

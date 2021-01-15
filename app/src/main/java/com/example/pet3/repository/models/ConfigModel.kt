@@ -6,23 +6,41 @@ import androidx.room.PrimaryKey
 import fito.FitoParam
 
 @Entity
-class ConfigModel(config: FitoParam.LampConfig) {
-    @PrimaryKey
-    var number: Int = 0
+class ConfigModel() {
 
-    var preset_number: Int = 1
+    constructor(config: FitoParam.LampConfig) : this() {
+        ch_1 = config.channelsList[0]
 
-    var ch_1: Int = config.channelsList[0]
+        ch_2 = config.channelsList[1]
 
-    val ch_2: Int = config.channelsList[1]
+        ch_3 = config.channelsList[2]
 
-    val ch_3: Int = config.channelsList[2]
+        ch_4 = config.channelsList[3]
 
-    val ch_4: Int = config.channelsList[3]
+        ch_5 = config.channelsList[4]
 
-    val ch_5: Int = config.channelsList[4]
+        time_stamp = config.timestamp
 
-    val time_stamp: Int = config.timestamp
+        smoothing_duration = config.smoothingDuration
+    }
 
-    val smoothing_duration: Int = config.smoothingDuration
+
+    @PrimaryKey(autoGenerate = true)
+    var number: Long = 0
+
+    var preset_number: Long = 0
+
+    var ch_1: Int = 0
+
+    var ch_2: Int = 0
+
+    var ch_3: Int = 0
+
+    var ch_4: Int = 0
+
+    var ch_5: Int = 0
+
+    var time_stamp: Int = 0
+
+    var smoothing_duration: Int = 0
 }

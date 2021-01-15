@@ -15,11 +15,12 @@ interface UdpService
 
     fun getWifiState()
 
-    fun parseProto(proto: Fito.MessageUnion)
+    fun parsePacket(packet: Fito.MessageUnion)
 
     fun presetPublishSubject(): Observable<PresetModel>
 
 
-    fun loadPreset(loading_preset_number: Int)
+    fun downloadPreset(loading_preset_number: Int)
+    fun uploadPreset(loading_preset_number: Int)
 
 }

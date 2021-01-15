@@ -6,15 +6,19 @@ import androidx.room.PrimaryKey
 import fito.FitoParam
 
 
+// класс для хранения программы в базе
+
 @Entity
 class ProgramModel() {
-    @PrimaryKey
-    var number: Int = 0
+    @PrimaryKey(autoGenerate = true)
+    var number: Long = 0
     var name: String = "name1"
-    @Ignore
-    val presets: Array<PresetModel> = arrayOf()
 
+    @Transient
+    var presets: Array<PresetModel> = arrayOf()
+
+    @Ignore
     public fun addPreset(preset: PresetModel) {
-        presets.plus(preset)
+        presets = presets.plus(preset)
     }
 }
