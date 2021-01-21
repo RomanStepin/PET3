@@ -11,13 +11,9 @@ import com.example.pet3.repository.room.ProgramDao
 
 class RepositoryImpl(app: App): Repository {
 
-    lateinit var programDao: ProgramDao
-    lateinit var database: Database
 
-    init {
-        database = Room.databaseBuilder(app.applicationContext, Database::class.java, "Database").fallbackToDestructiveMigration().build()
-        programDao = database.getProgramDao()
-    }
+    var database = Room.databaseBuilder(app.applicationContext, Database::class.java, "Database").fallbackToDestructiveMigration().build()
+    var programDao = database.getProgramDao()
 
     override fun saveProgram(programModel: ProgramModel) {
         val programNumber = programDao.insertProgram(programModel = programModel)
@@ -37,6 +33,35 @@ class RepositoryImpl(app: App): Repository {
     override fun saveConfig(configModel: ConfigModel, presetNumber: Long) {
         configModel.preset_number = presetNumber
         programDao.insertConfig(configModel = configModel)
+    }
+
+    override fun getProgramByName(name: String): ProgramModel? {
+        val programModel: ProgramModel? =  programDao.getProgramByName(name)
+        if (programModel == null) {
+            return null
+        } else {
+            programDao.getPresetsByProgramNumber(programModel.number)?.forEach { preset: PresetModel ->
+                preset.configs.forEach { config: ConfigModel ->
+                    preset.addConfig(config)
+                }
+                programModel.addPreset(preset)
+            }
+        }
+        return  programModel
+    }
+
+    override fun updateProgram(newProgramModel: ProgramModel) {
+        val programModel = programDao.getProgramByName(newProgramModel.name)
+        if (programModel != null) {
+            programDao.getPresetsByProgramNumber(programModel.number)?.forEach { preset ->
+                programDao.deleteConfigsByPresetNumber(preset.number)
+            }
+            programDao.deletePresetsByProgramNumber(programModel.number)
+            programDao.deleteProgramByName(programModel.name)
+        }
+
+            saveProgram(newProgramModel)
+
     }
 
 }

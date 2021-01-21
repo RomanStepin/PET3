@@ -29,8 +29,8 @@ public class UdpServiceImpl (val app: App, val socket: DatagramSocket): UdpServi
     private var isUsing = true
     var clientSocket = DatagramSocket().also { it.broadcast = true }
 
-    var downloadPresetPublishSubject: PublishSubject<PresetModel> = PublishSubject.create()
-    var uploadPresetPublishSubject: PublishSubject<PresetModel> = PublishSubject.create()
+    var downloadPresetPublishSubject: PublishSubject<Pair<PresetModel, Int>> = PublishSubject.create()
+    var uploadPresetPublishSubject: PublishSubject<Pair<PresetModel, Int>> = PublishSubject.create()
 
     var broadcastAddress: InetAddress
         get() {
@@ -85,7 +85,7 @@ public class UdpServiceImpl (val app: App, val socket: DatagramSocket): UdpServi
 
     override fun parsePacket(packet: Fito.MessageUnion) {
         if (packet.param.action == FitoParam.Param.Action.GET && packet.param.preset != FitoParam.Preset.getDefaultInstance() && packet.param.preset.presetsCount != 0 && App.STATE == States.DOWNLOADING_PROGRAM) {
-            downloadPresetPublishSubject.onNext(PresetModel(packet.param.preset))
+            downloadPresetPublishSubject.onNext(Pair(PresetModel(packet.param.preset), packet.sysId))
         }
         if (packet.param.action == FitoParam.Param.Action.ACK && packet.param.preset != FitoParam.Preset.getDefaultInstance() && packet.param.preset.presetsCount != 0 && App.STATE == States.UPLOADING_PROGRAM)
         {
@@ -93,24 +93,24 @@ public class UdpServiceImpl (val app: App, val socket: DatagramSocket): UdpServi
         }
     }
 
-    override fun downloadPresetPublishSubject(): Observable<PresetModel> {
+    override fun downloadPresetPublishSubject(): Observable<Pair<PresetModel, Int>> {
         return downloadPresetPublishSubject
     }
 
-    override fun uploadPresetPublishSubject(): Observable<PresetModel> {
+    override fun uploadPresetPublishSubject(): Observable<Pair<PresetModel, Int>> {
         return uploadPresetPublishSubject
     }
 
-    override fun downloadPreset(loading_preset_number: Int) {
+    override fun downloadPreset(loadingPresetNumber: Int, targetId: Int) {
         messageUdp = fito.Fito.MessageUnion.newBuilder().apply {
             sysId = 0
-            targetId = 1
+            this.targetId = targetId
             param = FitoParam.Param.newBuilder().apply {
                 action = FitoParam.Param.Action.GET
                 ack = FitoParam.Param.Ack.ACK_ACCEPTED
                     preset = FitoParam.Preset.newBuilder().apply {
                         duration = 0
-                        presetNumber = loading_preset_number
+                        presetNumber = loadingPresetNumber
                         presetsCount = 0
                     }.build()
             }.build()

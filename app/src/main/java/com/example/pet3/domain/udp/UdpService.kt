@@ -17,11 +17,11 @@ interface UdpService
 
     fun parsePacket(packet: Fito.MessageUnion)
 
-    fun downloadPresetPublishSubject(): Observable<PresetModel>
-    fun uploadPresetPublishSubject(): Observable<PresetModel>
+    fun downloadPresetPublishSubject(): Observable<Pair<PresetModel, Int>>
+    fun uploadPresetPublishSubject(): Observable<Pair<PresetModel, Int>>
 
 
-    fun downloadPreset(loading_preset_number: Int)
+    fun downloadPreset(loadingPresetNumber: Int, targetId: Int)
     fun uploadPreset(presetModel: PresetModel, targetId: Int)
 
 }

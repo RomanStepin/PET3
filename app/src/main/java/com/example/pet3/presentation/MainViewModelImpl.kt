@@ -22,85 +22,112 @@ class MainViewModelImpl(app: App) : MainViewModel(app) {
 
 
     private var answerDelay: Long = 3000
-    private var maxAttemptCount = 3
-    private var attempt = 0
 
-    @Volatile private var loadingPresetNumber = 0
+    private var loadingPresetNumber = 0
+    private var targetID = 1
 
-    private var loadPresetLiveData: MutableLiveData<PresetModel> = MutableLiveData()
-    private var loadProgramLiveData: MutableLiveData<Boolean> = MutableLiveData()
+    private var downloadPresetLiveData: MutableLiveData<PresetModel> = MutableLiveData()
 
-    lateinit var programModel: ProgramModel
-    @Volatile var presetsArray: MutableList<Boolean> = mutableListOf()
+    private var downloadProgramLiveData: MutableLiveData<Boolean> = MutableLiveData()
+    private var createdProgramLiveData: MutableLiveData<Boolean> = MutableLiveData()
+
+    private var uploadProgramLiveData: MutableLiveData<Boolean> = MutableLiveData()
+
+
+
+    @Volatile
+    var programModel: ProgramModel? = null
+    var presetsArray: MutableList<Boolean> = mutableListOf()
 
     init {
-            val disposable1 = udpService.presetPublishSubject().subscribeOn(Schedulers.newThread()).subscribe {
-                programModel.addPreset(it)
-                presetsArray[it.number_in_program - 1] = true
+            val disposable1 = udpService.downloadPresetPublishSubject().subscribeOn(Schedulers.newThread()).subscribe {
+                if (it.second == targetID) {
+                    programModel!!.addPreset(it.first)
+                    presetsArray[it.first.number_in_program - 1] = true
 
-                if (it.number_in_program == it.presets_count) {
-                    App.STATE = States.HEARTBEAT
-                    saveProgram()
-                }
-                else {
-                    App.STATE = States.DOWNLOADING_PROGRAM
-                    loadingPresetNumber = it.number_in_program + 1
-                    presetsArray.add(false)
+                    if (it.first.number_in_program == it.first.presets_count) {
+                        App.STATE = States.HEARTBEAT
+                        saveProgram()
+                        downloadProgramLiveData.postValue(true)
+                    } else {
+                        App.STATE = States.DOWNLOADING_PROGRAM
+                        loadingPresetNumber = it.first.number_in_program + 1
+                        presetsArray.add(false)
 
-                    downloadPreset()
+                        downloadPreset(targetID)
+                    }
                 }
             }
             disposables.add(disposable1)
     }
 
-    override fun downloadPreset()
+    override fun downloadPreset(targetID: Int)
     {
         Thread{
             val expectationPresetNumber = loadingPresetNumber
-                    while(true) {
+                    while(App.STATE == States.DOWNLOADING_PROGRAM) {
                         Thread.sleep(answerDelay)
                         if (presetsArray[expectationPresetNumber - 1] == false) {
                             Log.d("LOGGG", "пресет с номером $expectationPresetNumber не пришел")
-                            udpService.downloadPreset(loadingPresetNumber)
+                            udpService.downloadPreset(loadingPresetNumber, targetID)
                         } else break
                     }
         }.start()
-        udpService.downloadPreset(loadingPresetNumber)
+        udpService.downloadPreset(loadingPresetNumber, targetID)
     }
 
-    override fun downloadProgram() {
+    override fun downloadProgram(targetID: Int) {
         loadingPresetNumber = 1
-        programModel = ProgramModel()
         App.STATE = States.DOWNLOADING_PROGRAM
+        this.targetID = targetID
         presetsArray = mutableListOf(false)
-        downloadPreset()
+        downloadPreset(targetID)
     }
 
-    override fun uploadProgram() {
+    override fun uploadProgram(targetID: Int, programName: String) {
+        programModel = repository.getProgramByName(programName)
+        if (programModel == null) {
+            uploadProgramLiveData.postValue(false)
+        } else {
+            TODO("выгрузка")
+        }
+    }
+
+    override fun uploadPreset(targetID: Int) {
         TODO("Not yet implemented")
     }
 
-    override fun uploadPreset() {
-        TODO("Not yet implemented")
-    }
-
+    @Synchronized
     override fun saveProgram() {
-        Log.d("LOGGG", "saveProgram " + programModel.name)
-        repository.saveProgram(programModel)
+        Log.d("LOGGG", "saveProgram " + programModel!!.name)
+        repository.updateProgram(programModel!!)
     }
 
     override fun createProgram(name: String) {
-        programModel.name = name
+        Thread{
+            if (repository.getProgramByName(name) == null){
+                createdProgramLiveData.postValue(true)
+                programModel = ProgramModel().also { it.name = name }
+            } else {
+                createdProgramLiveData.postValue(false)
+                programModel = repository.getProgramByName(name)
+                programModel!!.presets = arrayOf()
+            }
+
+        }.start()
     }
 
+    override fun createdProgramLiveData(): LiveData<Boolean> {
+        return createdProgramLiveData
+    }
 
 
     override fun downloadPresetLiveData(): LiveData<PresetModel> {
-        return loadPresetLiveData
+        return downloadPresetLiveData
     }
 
     override fun downloadProgramLiveData(): LiveData<Boolean> {
-        return loadProgramLiveData
+        return downloadProgramLiveData
     }
 
     override fun uploadPresetLiveData(): LiveData<PresetModel> {

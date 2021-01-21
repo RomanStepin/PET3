@@ -9,4 +9,7 @@ interface Repository{
     fun saveProgram(programModel: ProgramModel)
     fun savePreset(presetModel: PresetModel, programNumber: Long)
     fun saveConfig(configModel: ConfigModel, presetNumber: Long)
+
+    fun getProgramByName(name: String): ProgramModel?
+    fun updateProgram(newProgramModel: ProgramModel)
 }

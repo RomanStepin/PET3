@@ -1,16 +1,11 @@
 package com.example.pet3.presentation
 
-import android.content.Context
-import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import com.example.pet3.App
 import com.example.pet3.R
-import com.example.pet3.domain.udp.UdpService
-import com.example.pet3.domain.udp.UdpServiceImpl
 import kotlinx.android.synthetic.main.activity_main.*
-import javax.inject.Inject
 
 
 class MainActivity : AppCompatActivity() {
@@ -27,14 +22,23 @@ class MainActivity : AppCompatActivity() {
 
         viewModel.downloadProgramLiveData().observe(this, {
             Log.d("LOGGG", "приняли всю прогу")
-            viewModel.createProgram("какое-то имя")
+            //viewModel.downloadProgram(5)
 
+        })
+
+        viewModel.createdProgramLiveData().observe(this, {
+            if (it) {
+                Log.d("LOGGG", "создали программу")
+            } else {
+                Log.d("LOGGG", "используем имеющуюся программу")
+            }
+            viewModel.downloadProgram( editTextTextLampId.text.toString().toInt())
         })
 
         button.setOnClickListener {
             Log.d("LOGGG", "|||||||")
             Log.d("LOGGG", "viewModel.loadProgram()")
-            viewModel.downloadProgram()
+            viewModel.createProgram(editTextTextProgramName.text.toString())
 
         }
     }
