@@ -23,8 +23,6 @@ import java.net.InetAddress
 
 public class UdpServiceImpl (val app: App, val socket: DatagramSocket): UdpService
 {
-    lateinit var programModel: ProgramModel
-    lateinit var presetModel: PresetModel
     lateinit var messageUdp: Fito.MessageUnion
     private var isUsing = true
     var clientSocket = DatagramSocket().also { it.broadcast = true }
@@ -43,10 +41,6 @@ public class UdpServiceImpl (val app: App, val socket: DatagramSocket): UdpServi
             return s1
         }
         set(value) {}
-
-    override fun sendUdpMessage(byteArray: ByteArray) {
-        Log.d("LOGGG", "sendUdpMessage")
-    }
 
     init {
         startUdpReceiver()
@@ -72,34 +66,25 @@ public class UdpServiceImpl (val app: App, val socket: DatagramSocket): UdpServi
 
     }
 
-
-
     override fun stopUdpReceiver() {
         Log.d("LOGGG", "stopUdpReceiver")
         isUsing = false
     }
 
-    override fun getWifiState() {
-        Log.d("LOGGG", "getWifiState")
-    }
+
 
     override fun parsePacket(packet: Fito.MessageUnion) {
-        if (packet.param.action == FitoParam.Param.Action.GET && packet.param.preset != FitoParam.Preset.getDefaultInstance() && packet.param.preset.presetsCount != 0 && App.STATE == States.DOWNLOADING_PROGRAM) {
+
+        if (packet.param.action == FitoParam.Param.Action.VALUE && packet.param.preset != FitoParam.Preset.getDefaultInstance() && packet.param.preset.presetsCount != 0 && App.STATE == States.DOWNLOADING_PROGRAM) {
             downloadPresetPublishSubject.onNext(Pair(PresetModel(packet.param.preset), packet.sysId))
         }
+
         if (packet.param.action == FitoParam.Param.Action.ACK && packet.param.preset != FitoParam.Preset.getDefaultInstance() && packet.param.preset.presetsCount != 0 && App.STATE == States.UPLOADING_PROGRAM)
         {
-
+            uploadPresetPublishSubject.onNext(Pair(PresetModel(packet.param.preset), packet.sysId))
         }
     }
 
-    override fun downloadPresetPublishSubject(): Observable<Pair<PresetModel, Int>> {
-        return downloadPresetPublishSubject
-    }
-
-    override fun uploadPresetPublishSubject(): Observable<Pair<PresetModel, Int>> {
-        return uploadPresetPublishSubject
-    }
 
     override fun downloadPreset(loadingPresetNumber: Int, targetId: Int) {
         messageUdp = fito.Fito.MessageUnion.newBuilder().apply {
@@ -150,5 +135,15 @@ public class UdpServiceImpl (val app: App, val socket: DatagramSocket): UdpServi
         Thread {
             clientSocket.send(sendPacketU1)
         }.start()
+    }
+
+
+
+    override fun downloadPresetPublishSubject(): Observable<Pair<PresetModel, Int>> {
+        return downloadPresetPublishSubject
+    }
+
+    override fun uploadPresetPublishSubject(): Observable<Pair<PresetModel, Int>> {
+        return uploadPresetPublishSubject
     }
 }

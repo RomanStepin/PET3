@@ -43,4 +43,18 @@ class ConfigModel() {
     var time_stamp: Int = 0
 
     var smoothing_duration: Int = 0
+
+    public fun toProtoClass(): FitoParam.LampConfig {
+        val config: FitoParam.LampConfig = FitoParam.LampConfig.newBuilder().also {
+            it.addChannels(ch_1)
+            it.addChannels(ch_2)
+            it.addChannels(ch_3)
+            it.addChannels(ch_4)
+            it.addChannels(ch_5)
+            it.smoothingDuration = smoothing_duration
+            it.timestamp = time_stamp
+        }.build()
+
+        return config
+    }
 }

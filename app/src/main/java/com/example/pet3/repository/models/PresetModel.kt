@@ -39,6 +39,9 @@ class PresetModel constructor() {
             it.duration = duration
             it.presetNumber = number_in_program
             it.presetsCount = presets_count
+            configs.forEach { configModel: ConfigModel ->
+                it.addConfigs(configModel.toProtoClass())
+            }
         }.build()
 
         return preset

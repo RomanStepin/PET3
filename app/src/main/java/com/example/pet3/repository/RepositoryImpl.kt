@@ -4,9 +4,11 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import com.example.pet3.App
 import com.example.pet3.repository.models.ConfigModel
+import com.example.pet3.repository.models.LampModel
 import com.example.pet3.repository.models.PresetModel
 import com.example.pet3.repository.models.ProgramModel
 import com.example.pet3.repository.room.Database
+import com.example.pet3.repository.room.LampDao
 import com.example.pet3.repository.room.ProgramDao
 
 class RepositoryImpl(app: App): Repository {
@@ -14,6 +16,7 @@ class RepositoryImpl(app: App): Repository {
 
     var database = Room.databaseBuilder(app.applicationContext, Database::class.java, "Database").fallbackToDestructiveMigration().build()
     var programDao = database.getProgramDao()
+    var lampDao: LampDao = database.getLampDao()
 
     override fun saveProgram(programModel: ProgramModel) {
         val programNumber = programDao.insertProgram(programModel = programModel)
@@ -41,7 +44,7 @@ class RepositoryImpl(app: App): Repository {
             return null
         } else {
             programDao.getPresetsByProgramNumber(programModel.number)?.forEach { preset: PresetModel ->
-                preset.configs.forEach { config: ConfigModel ->
+                programDao.getConfigsByPresetNumber(preset.number)?.forEach { config: ConfigModel ->
                     preset.addConfig(config)
                 }
                 programModel.addPreset(preset)
@@ -59,9 +62,23 @@ class RepositoryImpl(app: App): Repository {
             programDao.deletePresetsByProgramNumber(programModel.number)
             programDao.deleteProgramByName(programModel.name)
         }
-
             saveProgram(newProgramModel)
+    }
 
+    override fun saveLamp(lampModel: LampModel): Long {
+        return lampDao.insertLamp(lampModel)
+    }
+
+    override fun updateLamp(lampModel: LampModel): Long {
+        return lampDao.updateLamp(lampModel)
+    }
+
+    override fun getLampByName(name: String): LampModel {
+        return lampDao.getLampByName(name)
+    }
+
+    override fun getLampsByGardenNumber(garden_number: Long): List<LampModel> {
+        return lampDao.getLampsByGardenNumber(garden_number)
     }
 
 }

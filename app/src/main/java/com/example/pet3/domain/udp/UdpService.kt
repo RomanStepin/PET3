@@ -7,21 +7,18 @@ import io.reactivex.subjects.PublishSubject
 
 interface UdpService
 {
-    fun sendUdpMessage(byteArray: ByteArray)
-
     fun startUdpReceiver()
-
     fun stopUdpReceiver()
-
-    fun getWifiState()
 
     fun parsePacket(packet: Fito.MessageUnion)
 
-    fun downloadPresetPublishSubject(): Observable<Pair<PresetModel, Int>>
-    fun uploadPresetPublishSubject(): Observable<Pair<PresetModel, Int>>
-
-
     fun downloadPreset(loadingPresetNumber: Int, targetId: Int)
     fun uploadPreset(presetModel: PresetModel, targetId: Int)
+    fun setTime(time: Int, targetId: Int)
+    fun getTime(targetId: Int)
+    fun setWifiAuth()
+
+    fun downloadPresetPublishSubject(): Observable<Pair<PresetModel, Int>>
+    fun uploadPresetPublishSubject(): Observable<Pair<PresetModel, Int>>
 
 }

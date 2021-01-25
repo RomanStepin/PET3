@@ -41,6 +41,10 @@ class MainActivity : AppCompatActivity() {
             viewModel.createProgram(editTextTextProgramName.text.toString())
 
         }
+
+        button2.setOnClickListener {
+            viewModel.uploadProgram(editTextTextLampId.text.toString().toInt(), editTextTextProgramName.text.toString())
+        }
     }
 
 
