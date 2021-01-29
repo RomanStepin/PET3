@@ -4,6 +4,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.example.pet3.App
+import com.example.pet3.StatesObservable
+import com.example.pet3.repository.models.LampModel
 import com.example.pet3.repository.models.LanSettingModel
 import com.example.pet3.repository.models.PresetModel
 import com.example.pet3.repository.models.ProgramModel
@@ -15,27 +17,27 @@ abstract class MainViewModel(app: App) : AndroidViewModel(app) {
 
     abstract fun downloadProgram(targetID: Int)
     abstract fun downloadPreset(targetID: Int)
-    abstract fun uploadProgram(targetID: Int, programName: String)
-    abstract fun uploadPreset(targetID: Int)
-
-
     abstract fun downloadTime(targetID: Int)
     abstract fun downloadWifiAuth(targetID: Int)
     abstract fun downloadLanSetting(targetID: Int)
     abstract fun downloadMQTTAuth(targetID: Int)
+
+    abstract fun uploadProgram(targetID: Int, programName: String)
+    abstract fun uploadPreset(targetID: Int)
     abstract fun uploadTime(time: Int, targetID: Int)
     abstract fun uploadWifiAuth(ssid: String, password: String, targetID: Int)
     abstract fun uploadLanSetting(lanSettingModel: LanSettingModel, targetID: Int)
     abstract fun uploadMQTTAuth(mqttLogin: String, mqttPassword: String, targetID: Int)
-
-
+    abstract fun uploadProgramIntoGardenLamps(targetID: Int, programNumber: Long, gardenNumber: Long)
 
 
     abstract fun createProgram(name: String)
     abstract fun saveProgram()
-
+    abstract fun getLampsByGardenNumber(gardenNumber: Long)
 
     var createdProgramLiveData: MutableLiveData<Boolean> = MutableLiveData()
+
+    var getLampsByGardenNumberLiveData: MutableLiveData<Pair<List<LampModel>, StatesObservable>> = MutableLiveData()
 
     var downloadPresetLiveData: MutableLiveData<PresetModel> = MutableLiveData()
     var downloadProgramLiveData: MutableLiveData<Boolean> = MutableLiveData()
@@ -50,4 +52,6 @@ abstract class MainViewModel(app: App) : AndroidViewModel(app) {
     var uploadWifiAuthLiveData: MutableLiveData<Boolean> = MutableLiveData()
     var uploadLanSettingLiveData: MutableLiveData<Boolean> = MutableLiveData()
     var uploadMQTTAuthLiveData: MutableLiveData<Boolean> = MutableLiveData()
+
+    var uploadProgramIntoGardenLampsLiveData: MutableLiveData<StatesObservable> = MutableLiveData()
 }

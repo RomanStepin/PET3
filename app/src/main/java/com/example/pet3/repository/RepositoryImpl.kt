@@ -2,10 +2,7 @@ package com.example.pet3.repository
 
 import androidx.room.Room
 import com.example.pet3.App
-import com.example.pet3.repository.models.ConfigModel
-import com.example.pet3.repository.models.LampModel
-import com.example.pet3.repository.models.PresetModel
-import com.example.pet3.repository.models.ProgramModel
+import com.example.pet3.repository.models.*
 import com.example.pet3.repository.room.Database
 import com.example.pet3.repository.room.LampDao
 
@@ -77,6 +74,10 @@ class RepositoryImpl(app: App): Repository {
 
     override fun getLampsByGardenNumber(garden_number: Long): List<LampModel> {
         return lampDao.getLampsByGardenNumber(garden_number)
+    }
+
+    override fun saveGarden(gardenModel: GardenModel): Long {
+        return lampDao.insertGarden(gardenModel)
     }
 
 }

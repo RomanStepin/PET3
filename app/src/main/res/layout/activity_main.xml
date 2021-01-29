@@ -29,6 +29,7 @@
         android:ems="10"
         android:hint="название программы"
         android:inputType="textPersonName"
+        android:text="2"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/button"
         app:layout_constraintTop_toTopOf="parent" />
@@ -120,9 +121,30 @@
         android:layout_height="wrap_content"
         android:inputType="time"
         android:text="0.0.0.0"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/buttonUploadLanSetting"
         app:layout_constraintTop_toBottomOf="@+id/editTextWifiAuth"
         app:mask="###.###.###.###" />
+
+    <Button
+        android:id="@+id/buttonUploadProgramIntoGardenLamps"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="загрузить программу на лампы грядки"
+        android:textSize="8sp"
+        app:layout_constraintStart_toEndOf="@+id/buttonDownloadTime"
+        app:layout_constraintTop_toBottomOf="@+id/buttonUploadLanSetting" />
+
+    <EditText
+        android:id="@+id/editTextGardenNumber"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:inputType="textPersonName"
+        android:text="1"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/buttonUploadProgramIntoGardenLamps"
+        app:layout_constraintTop_toBottomOf="@+id/ip" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -6,6 +6,8 @@ import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import com.example.pet3.App
 import com.example.pet3.R
+import com.example.pet3.StatesObservable
+import com.example.pet3.repository.models.LanSettingModel
 import kotlinx.android.synthetic.main.activity_main.*
 import java.text.SimpleDateFormat
 import java.util.*
@@ -38,6 +40,12 @@ class MainActivity : AppCompatActivity() {
                 Log.d("LOGGG", "используем имеющуюся программу")
             }
             viewModel.downloadProgram( editTextTextLampId.text.toString().toInt())
+        })
+
+        viewModel.getLampsByGardenNumberLiveData.observe(this, {
+            if (it.second == StatesObservable.REPOSITORY_FAILED){
+                Log.d("LOGGG", "нинайдина лампычей")
+            }
         })
 
         button.setOnClickListener {
@@ -74,6 +82,14 @@ class MainActivity : AppCompatActivity() {
 
         buttonDownloadLanSetting.setOnClickListener {
             viewModel.downloadLanSetting(editTextTextLampId.text.toString().toInt())
+        }
+
+        buttonUploadLanSetting.setOnClickListener {
+            viewModel.uploadLanSetting(LanSettingModel(false, ip.text.toString(), "255.255.255.0", ip.text.toString().replaceAfterLast('.', "1")), editTextTextLampId.text.toString().toInt())
+        }
+
+        buttonUploadProgramIntoGardenLamps.setOnClickListener {
+            viewModel.uploadProgramIntoGardenLamps(editTextTextLampId.text.toString().toInt(), editTextTextProgramName.text.toString().toLong(), editTextGardenNumber.text.toString().toLong())
         }
 
 

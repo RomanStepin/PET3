@@ -19,8 +19,10 @@ interface UdpService
     var uploadPresetPublishSubject: PublishSubject<Pair<PresetModel, Int>>
     var uploadTimePublishSubject: PublishSubject<Pair<Int, Int>>
     var uploadWifiAuthPublishSubject: PublishSubject<Pair<WifiAuthModel, Int>>
-    var uploadLanSettingPublishSubject: PublishSubject<Pair<PresetModel, Int>>
+    var uploadLanSettingPublishSubject: PublishSubject<Pair<LanSettingModel, Int>>
     var uploadMQTTAuthPublishSubject: PublishSubject<Pair<PresetModel, Int>>
+
+    var ackFailedPublishSubject: PublishSubject<Boolean>
 
     fun startUdpReceiver()
     fun stopUdpReceiver()

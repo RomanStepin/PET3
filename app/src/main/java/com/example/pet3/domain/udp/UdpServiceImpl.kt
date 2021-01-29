@@ -35,8 +35,9 @@ public class UdpServiceImpl (val app: App, val socket: DatagramSocket): UdpServi
     override var uploadPresetPublishSubject: PublishSubject<Pair<PresetModel, Int>> = PublishSubject.create()
     override var uploadTimePublishSubject: PublishSubject<Pair<Int, Int>> = PublishSubject.create()
     override var uploadWifiAuthPublishSubject: PublishSubject<Pair<WifiAuthModel, Int>> = PublishSubject.create()
-    override var uploadLanSettingPublishSubject: PublishSubject<Pair<PresetModel, Int>> = PublishSubject.create()
+    override var uploadLanSettingPublishSubject: PublishSubject<Pair<LanSettingModel, Int>> = PublishSubject.create()
     override var uploadMQTTAuthPublishSubject: PublishSubject<Pair<PresetModel, Int>> = PublishSubject.create()
+    override var ackFailedPublishSubject: PublishSubject<Boolean> = PublishSubject.create()
 
     var broadcastAddress: InetAddress
         get() {
@@ -83,33 +84,42 @@ public class UdpServiceImpl (val app: App, val socket: DatagramSocket): UdpServi
 
     override fun parsePacket(packet: Fito.MessageUnion) {
 
-        if (packet.param.action == FitoParam.Param.Action.VALUE && packet.param.preset != FitoParam.Preset.getDefaultInstance() && packet.param.preset.presetsCount != 0 && App.STATE == States.DOWNLOADING_PROGRAM) {
+        if (packet.param.action == FitoParam.Param.Action.VALUE && packet.param.ack == FitoParam.Param.Ack.ACK_ACCEPTED && packet.param.preset != FitoParam.Preset.getDefaultInstance() && packet.param.preset.presetsCount != 0 && App.STATE == States.DOWNLOADING_PROGRAM) {
             downloadPresetPublishSubject.onNext(Pair(PresetModel(packet.param.preset), packet.sysId))
         }
 
-        if (packet.param.action == FitoParam.Param.Action.ACK && packet.param.preset != FitoParam.Preset.getDefaultInstance() && packet.param.preset.presetsCount != 0 && App.STATE == States.UPLOADING_PROGRAM) {
+        if (packet.param.action == FitoParam.Param.Action.ACK && packet.param.ack == FitoParam.Param.Ack.ACK_ACCEPTED  && packet.param.preset != FitoParam.Preset.getDefaultInstance() && packet.param.preset.presetsCount != 0 && App.STATE == States.UPLOADING_PROGRAM) {
             uploadPresetPublishSubject.onNext(Pair(PresetModel(packet.param.preset), packet.sysId))
         }
 
-        if (packet.param.action == FitoParam.Param.Action.VALUE && packet.param.time != FitoParam.Time.getDefaultInstance() && App.STATE == States.DOWNLOADING_TIME) {
+        if (packet.param.action == FitoParam.Param.Action.VALUE && packet.param.ack == FitoParam.Param.Ack.ACK_ACCEPTED && packet.param.time != FitoParam.Time.getDefaultInstance() && App.STATE == States.DOWNLOADING_TIME) {
             downloadTimePublishSubject.onNext(Pair(packet.param.time.time, packet.sysId))
         }
 
-        if (packet.param.action == FitoParam.Param.Action.ACK && packet.param.time != FitoParam.Time.getDefaultInstance() && App.STATE == States.UPLOADING_TIME) {
+        if (packet.param.action == FitoParam.Param.Action.ACK && packet.param.ack == FitoParam.Param.Ack.ACK_ACCEPTED && packet.param.time != FitoParam.Time.getDefaultInstance() && App.STATE == States.UPLOADING_TIME) {
             uploadTimePublishSubject.onNext(Pair(packet.param.time.time, packet.sysId))
         }
 
-        if (packet.param.action == FitoParam.Param.Action.VALUE && packet.param.wifiAuth != FitoParam.WiFiAuth.getDefaultInstance() && App.STATE == States.DOWNLOADING_WIFI_AUTH) {
+        if (packet.param.action == FitoParam.Param.Action.VALUE && packet.param.ack == FitoParam.Param.Ack.ACK_ACCEPTED && packet.param.wifiAuth != FitoParam.WiFiAuth.getDefaultInstance() && App.STATE == States.DOWNLOADING_WIFI_AUTH) {
             downloadWifiAuthPublishSubject.onNext(Pair(WifiAuthModel(packet.param.wifiAuth.ssid, packet.param.wifiAuth.password), packet.sysId))
         }
-        if (packet.param.action == FitoParam.Param.Action.ACK && packet.param.wifiAuth != FitoParam.WiFiAuth.getDefaultInstance() && App.STATE == States.UPLOADING_WIFI_AUTH) {
+        if (packet.param.action == FitoParam.Param.Action.ACK && packet.param.ack == FitoParam.Param.Ack.ACK_ACCEPTED && packet.param.wifiAuth != FitoParam.WiFiAuth.getDefaultInstance() && App.STATE == States.UPLOADING_WIFI_AUTH) {
             uploadWifiAuthPublishSubject.onNext(Pair(WifiAuthModel(packet.param.wifiAuth.ssid, packet.param.wifiAuth.password), packet.sysId))
         }
 
-        if (packet.param.action == FitoParam.Param.Action.VALUE && packet.param.lanSetting != FitoParam.LanSetting.getDefaultInstance() && App.STATE == States.DOWNLOADING_LAN_SETTING) {
+        if (packet.param.action == FitoParam.Param.Action.VALUE && packet.param.ack == FitoParam.Param.Ack.ACK_ACCEPTED && packet.param.lanSetting != FitoParam.LanSetting.getDefaultInstance() && App.STATE == States.DOWNLOADING_LAN_SETTING) {
             downloadLanSettingPublishSubject.onNext(Pair(LanSettingModel(packet.param.lanSetting.useDHCP, packet.param.lanSetting.ip, packet.param.lanSetting.mask, packet.param.lanSetting.gateware), packet.sysId))
         }
 
+        if (packet.param.action == FitoParam.Param.Action.ACK && packet.param.ack == FitoParam.Param.Ack.ACK_ACCEPTED && packet.param.lanSetting != FitoParam.LanSetting.getDefaultInstance() && App.STATE == States.UPLOADING_LAN_SETTING) {
+            uploadLanSettingPublishSubject.onNext(Pair(LanSettingModel(packet.param.lanSetting.useDHCP, packet.param.lanSetting.ip, packet.param.lanSetting.mask, packet.param.lanSetting.gateware), packet.sysId))
+        }
+
+
+
+        if (packet.param.ack == FitoParam.Param.Ack.ACK_FAILED) {
+            ackFailedPublishSubject.onNext(true)
+        }
     }
 
 

@@ -4,12 +4,16 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
+import com.example.pet3.repository.models.GardenModel
 import com.example.pet3.repository.models.LampModel
 
 @Dao
 interface LampDao {
     @Insert
     fun insertLamp(lampModel: LampModel): Long
+
+    @Insert
+    fun insertGarden(gardenModel: GardenModel): Long
 
     @Update
     fun updateLamp(lampModel: LampModel)

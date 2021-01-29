@@ -9,12 +9,10 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.example.pet3.App
 import com.example.pet3.States
+import com.example.pet3.StatesObservable
 import com.example.pet3.domain.udp.UdpService
 import com.example.pet3.repository.Repository
-import com.example.pet3.repository.models.LanSettingModel
-import com.example.pet3.repository.models.PresetModel
-import com.example.pet3.repository.models.ProgramModel
-import com.example.pet3.repository.models.WifiAuthModel
+import com.example.pet3.repository.models.*
 import io.reactivex.schedulers.Schedulers
 import java.text.SimpleDateFormat
 import java.util.*
@@ -42,13 +40,14 @@ class MainViewModelImpl(app: App) : MainViewModel(app) {
 
                     if (it.first.number_in_program == it.first.presets_count) {
                         App.STATE = States.HEARTBEAT
+                        Log.d("LOGGG", "все скачали")
                         saveProgram()
                         downloadProgramLiveData.postValue(true)
                     } else {
                         App.STATE = States.DOWNLOADING_PROGRAM
                         loadingPresetNumber = it.first.number_in_program + 1
                         presetsArray.add(false)
-
+                        Log.d("LOGGG", "пресет скачали")
                         downloadPreset(targetID)
                     }
                 }
@@ -67,7 +66,7 @@ class MainViewModelImpl(app: App) : MainViewModel(app) {
                     App.STATE = States.UPLOADING_PROGRAM
                     loadingPresetNumber = it.first.number_in_program + 1
                     presetsArray.add(false)
-
+                    Log.d("LOGGG", "пресет загрузили")
                     uploadPreset(targetID)
                 }
             }
@@ -117,10 +116,26 @@ class MainViewModelImpl(app: App) : MainViewModel(app) {
         val disposable7 = udpService.downloadLanSettingPublishSubject.subscribeOn(Schedulers.newThread()).subscribe {
             if (it.second == targetID) {
                 App.STATE = States.HEARTBEAT
-                Log.d("LOGGG", "загрузили данные LANSETTING ${it.first.useDHCP}   ${it.first.ip}  ${it.first.mask}  ${it.first.gateware}")
+                Log.d("LOGGG", "скачали данные LANSETTING ${it.first.useDHCP}   ${it.first.ip}  ${it.first.mask}  ${it.first.gateware}")
             }
         }
         disposables.add(disposable7)
+
+        val disposable8 = udpService.uploadLanSettingPublishSubject.subscribeOn(Schedulers.newThread()).subscribe {
+            if (it.second == targetID) {
+                App.STATE = States.HEARTBEAT
+                Log.d("LOGGG", "загрузили данные LANSETTING ${it.first.useDHCP}   ${it.first.ip}  ${it.first.mask}  ${it.first.gateware}" )
+            }
+        }
+        disposables.add(disposable8)
+
+        val disposable9 = udpService.ackFailedPublishSubject.subscribeOn(Schedulers.newThread()).subscribe {
+            if (it == true) {
+                App.STATE = States.HEARTBEAT
+                Log.d("LOGGG", "чета ошибочка кек мня мня" )
+            }
+        }
+        disposables.add(disposable9)
     }
 
 
@@ -247,11 +262,34 @@ class MainViewModelImpl(app: App) : MainViewModel(app) {
     }
 
     override fun uploadLanSetting(lanSettingModel: LanSettingModel, targetID: Int) {
-        TODO("Not yet implemented")
+        App.STATE = States.UPLOADING_LAN_SETTING
+        this.targetID = targetID
+        Thread{
+            while (true)
+            {
+                Thread.sleep(1000)
+                if (App.STATE == States.UPLOADING_LAN_SETTING) {
+                    Log.d("LOGGG", "LAN_SETTING настройки на лампу $targetID не пришли")
+                    udpService.uploadLanSetting(lanSettingModel, targetID)
+                } else break
+            }
+        }.start()
+        udpService.uploadLanSetting(lanSettingModel, targetID)
     }
 
     override fun uploadMQTTAuth(mqttLogin: String, mqttPassword: String, targetID: Int) {
         TODO("Not yet implemented")
+    }
+
+    override fun uploadProgramIntoGardenLamps(targetID: Int, programNumber: Long, gardenNumber: Long) {
+        Thread{
+            val lamps: List<LampModel>? = repository.getLampsByGardenNumber(gardenNumber)
+            if (lamps == null) {
+                uploadProgramIntoGardenLampsLiveData.postValue(StatesObservable.REPOSITORY_FAILED)
+            }
+
+        }.start()
+
     }
 
     override fun downloadPreset(targetID: Int)
@@ -273,6 +311,14 @@ class MainViewModelImpl(app: App) : MainViewModel(app) {
     override fun saveProgram() {
         Log.d("LOGGG", "saveProgram " + programModel!!.name)
         repository.updateProgram(programModel!!)
+    }
+
+    override fun getLampsByGardenNumber(gardenNumber: Long) {
+        Thread{
+            val list = repository.getLampsByGardenNumber(gardenNumber)
+            if (list == null) getLampsByGardenNumberLiveData.postValue(Pair(list, StatesObservable.REPOSITORY_FAILED))
+        }.start()
+
     }
 
     override fun createProgram(name: String) {
