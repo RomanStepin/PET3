@@ -1,7 +1,6 @@
 package com.example.pet3.repository
 
 import androidx.room.Room
-import androidx.room.RoomDatabase
 import com.example.pet3.App
 import com.example.pet3.repository.models.ConfigModel
 import com.example.pet3.repository.models.LampModel
@@ -9,7 +8,6 @@ import com.example.pet3.repository.models.PresetModel
 import com.example.pet3.repository.models.ProgramModel
 import com.example.pet3.repository.room.Database
 import com.example.pet3.repository.room.LampDao
-import com.example.pet3.repository.room.ProgramDao
 
 class RepositoryImpl(app: App): Repository {
 
@@ -69,8 +67,8 @@ class RepositoryImpl(app: App): Repository {
         return lampDao.insertLamp(lampModel)
     }
 
-    override fun updateLamp(lampModel: LampModel): Long {
-        return lampDao.updateLamp(lampModel)
+    override fun updateLamp(lampModel: LampModel) {
+        lampDao.updateLamp(lampModel)
     }
 
     override fun getLampByName(name: String): LampModel {

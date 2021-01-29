@@ -26,4 +26,10 @@ class LampModel {
 
     var underWIFIControl: Int = 1
     var underMQTTControl: Int = 0
+
+
+    public fun setLanSetting(lanSettingModel: LanSettingModel)
+    {
+
+    }
 }

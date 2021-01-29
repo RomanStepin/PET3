@@ -11,9 +11,13 @@ import com.example.pet3.App
 import com.example.pet3.States
 import com.example.pet3.domain.udp.UdpService
 import com.example.pet3.repository.Repository
+import com.example.pet3.repository.models.LanSettingModel
 import com.example.pet3.repository.models.PresetModel
 import com.example.pet3.repository.models.ProgramModel
+import com.example.pet3.repository.models.WifiAuthModel
 import io.reactivex.schedulers.Schedulers
+import java.text.SimpleDateFormat
+import java.util.*
 
 class MainViewModelImpl(app: App) : MainViewModel(app) {
 
@@ -26,21 +30,12 @@ class MainViewModelImpl(app: App) : MainViewModel(app) {
     private var loadingPresetNumber = 0
     private var targetID = 1
 
-    private var downloadPresetLiveData: MutableLiveData<PresetModel> = MutableLiveData()
-
-    private var downloadProgramLiveData: MutableLiveData<Boolean> = MutableLiveData()
-    private var createdProgramLiveData: MutableLiveData<Boolean> = MutableLiveData()
-
-    private var uploadProgramLiveData: MutableLiveData<Boolean> = MutableLiveData()
-
-
-
     @Volatile
     var programModel: ProgramModel? = null
     var presetsArray: MutableList<Boolean> = mutableListOf()
 
     init {
-            val disposable1 = udpService.downloadPresetPublishSubject().subscribeOn(Schedulers.newThread()).subscribe {
+            val disposable1 = udpService.downloadPresetPublishSubject.subscribeOn(Schedulers.newThread()).subscribe {
                 if (it.second == targetID) {
                     programModel!!.addPreset(it.first)
                     presetsArray[it.first.number_in_program - 1] = true
@@ -60,8 +55,7 @@ class MainViewModelImpl(app: App) : MainViewModel(app) {
             }
             disposables.add(disposable1)
 
-
-        val disposable2 = udpService.uploadPresetPublishSubject().subscribeOn(Schedulers.newThread()).subscribe {
+        val disposable2 = udpService.uploadPresetPublishSubject.subscribeOn(Schedulers.newThread()).subscribe {
             if (it.second == targetID) {
                 presetsArray[it.first.number_in_program - 1] = true
 
@@ -79,6 +73,54 @@ class MainViewModelImpl(app: App) : MainViewModel(app) {
             }
         }
         disposables.add(disposable2)
+
+        val disposable3 = udpService.downloadTimePublishSubject.subscribeOn(Schedulers.newThread()).subscribe {
+            if (it.second == targetID) {
+                App.STATE = States.HEARTBEAT
+                val format = SimpleDateFormat("dd:MM:yyyy:HH:mm:ss", Locale("en"))
+                val ll: Long = it.first.toLong() * 1000
+                val date = Date(ll)
+                var s =  format.format(date)
+                Log.d("LOGGG", "время у нас $s    а в цифрах ${it.first}" )
+            }
+        }
+        disposables.add(disposable3)
+
+        val disposable4 = udpService.uploadTimePublishSubject.subscribeOn(Schedulers.newThread()).subscribe {
+            if (it.second == targetID) {
+                App.STATE = States.HEARTBEAT
+                val format = SimpleDateFormat("dd:MM:yyyy:HH:mm:ss", Locale("en"))
+                val ll: Long = it.first.toLong() * 1000
+                val date = Date(ll)
+                var s =  format.format(date)
+                Log.d("LOGGG", "загрузили время $s   а в цифрах ${it.first}")
+            }
+        }
+        disposables.add(disposable4)
+
+        val disposable5 = udpService.downloadWifiAuthPublishSubject.subscribeOn(Schedulers.newThread()).subscribe {
+            if (it.second == targetID) {
+                App.STATE = States.HEARTBEAT
+                Log.d("LOGGG", "скачали данные WI-FI ${it.first.ssid}   ${it.first.password}" )
+            }
+        }
+        disposables.add(disposable5)
+
+        val disposable6 = udpService.uploadWifiAuthPublishSubject.subscribeOn(Schedulers.newThread()).subscribe {
+            if (it.second == targetID) {
+                App.STATE = States.HEARTBEAT
+                Log.d("LOGGG", "загрузили данные WI-FI ${it.first.ssid}   ${it.first.password}" )
+            }
+        }
+        disposables.add(disposable6)
+
+        val disposable7 = udpService.downloadLanSettingPublishSubject.subscribeOn(Schedulers.newThread()).subscribe {
+            if (it.second == targetID) {
+                App.STATE = States.HEARTBEAT
+                Log.d("LOGGG", "загрузили данные LANSETTING ${it.first.useDHCP}   ${it.first.ip}  ${it.first.mask}  ${it.first.gateware}")
+            }
+        }
+        disposables.add(disposable7)
     }
 
 
@@ -120,6 +162,98 @@ class MainViewModelImpl(app: App) : MainViewModel(app) {
         udpService.uploadPreset(programModel!!.presets[loadingPresetNumber-1], targetID)
     }
 
+    override fun downloadTime(targetID: Int) {
+        App.STATE = States.DOWNLOADING_TIME
+        this.targetID = targetID
+        Thread{
+            while (true)
+            {
+                Thread.sleep(1000)
+                if (App.STATE == States.DOWNLOADING_TIME) {
+                    Log.d("LOGGG", "время с лампы $targetID не пришло")
+                    udpService.downloadTime(targetID)
+                } else break
+            }
+        }.start()
+        udpService.downloadTime(targetID)
+    }
+
+    override fun downloadWifiAuth(targetID: Int) {
+        App.STATE = States.DOWNLOADING_WIFI_AUTH
+        this.targetID = targetID
+        Thread{
+            while (true)
+            {
+                Thread.sleep(1000)
+                if (App.STATE == States.DOWNLOADING_WIFI_AUTH) {
+                    Log.d("LOGGG", "данные WI-FI с лампы $targetID не пришли")
+                    udpService.downloadWifiAuth(targetID)
+                } else break
+            }
+        }.start()
+        udpService.downloadWifiAuth(targetID)
+    }
+
+    override fun downloadLanSetting(targetID: Int) {
+        App.STATE = States.DOWNLOADING_LAN_SETTING
+        this.targetID = targetID
+        Thread{
+            while (true)
+            {
+                Thread.sleep(1000)
+                if (App.STATE == States.DOWNLOADING_LAN_SETTING) {
+                    Log.d("LOGGG", "данные lanSetting с лампы $targetID не пришли")
+                    udpService.downloadLanSetting(targetID)
+                } else break
+            }
+        }.start()
+        udpService.downloadLanSetting(targetID)
+    }
+
+    override fun downloadMQTTAuth(targetID: Int) {
+        TODO("Not yet implemented")
+    }
+
+    override fun uploadTime(time: Int, targetID: Int) {
+        App.STATE = States.UPLOADING_TIME
+        this.targetID = targetID
+        Thread{
+            while (true)
+            {
+                Thread.sleep(1000)
+                if (App.STATE == States.UPLOADING_TIME) {
+                    Log.d("LOGGG", "время на лампу $targetID не пришло")
+                    udpService.uploadTime(time, targetID)
+                } else break
+            }
+        }.start()
+        udpService.uploadTime(time, targetID)
+    }
+
+    override fun uploadWifiAuth(ssid: String, password: String, targetID: Int) {
+        App.STATE = States.UPLOADING_WIFI_AUTH
+        this.targetID = targetID
+        Thread{
+            while (true)
+            {
+                Thread.sleep(1000)
+                if (App.STATE == States.UPLOADING_WIFI_AUTH) {
+                    Log.d("LOGGG", "wi-fi настройки на лампу $targetID не пришли")
+                    udpService.uploadWifiAuth(WifiAuthModel(ssid, password), targetID)
+                } else break
+            }
+        }.start()
+        udpService.uploadWifiAuth(WifiAuthModel(ssid, password), targetID)
+    }
+
+    override fun uploadLanSetting(lanSettingModel: LanSettingModel, targetID: Int) {
+        TODO("Not yet implemented")
+    }
+
+    override fun uploadMQTTAuth(mqttLogin: String, mqttPassword: String, targetID: Int) {
+        TODO("Not yet implemented")
+    }
+
     override fun downloadPreset(targetID: Int)
     {
         Thread{
@@ -153,26 +287,5 @@ class MainViewModelImpl(app: App) : MainViewModel(app) {
             }
 
         }.start()
-    }
-
-    override fun createdProgramLiveData(): LiveData<Boolean> {
-        return createdProgramLiveData
-    }
-
-
-    override fun downloadPresetLiveData(): LiveData<PresetModel> {
-        return downloadPresetLiveData
-    }
-
-    override fun downloadProgramLiveData(): LiveData<Boolean> {
-        return downloadProgramLiveData
-    }
-
-    override fun uploadPresetLiveData(): LiveData<PresetModel> {
-        TODO("Not yet implemented")
-    }
-
-    override fun uploadProgramLiveData(): LiveData<Boolean> {
-        TODO("Not yet implemented")
     }
 }

@@ -12,7 +12,7 @@ interface LampDao {
     fun insertLamp(lampModel: LampModel): Long
 
     @Update
-    fun updateLamp(lampModel: LampModel): Long
+    fun updateLamp(lampModel: LampModel)
 
     @Query("SELECT * FROM LampModel WHERE name = :name LIMIT 1")
     fun getLampByName(name: String): LampModel
