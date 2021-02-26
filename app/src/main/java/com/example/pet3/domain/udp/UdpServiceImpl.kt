@@ -37,7 +37,9 @@ public class UdpServiceImpl (val app: App, val socket: DatagramSocket): UdpServi
     override var uploadWifiAuthPublishSubject: PublishSubject<Pair<WifiAuthModel, Int>> = PublishSubject.create()
     override var uploadLanSettingPublishSubject: PublishSubject<Pair<LanSettingModel, Int>> = PublishSubject.create()
     override var uploadMQTTAuthPublishSubject: PublishSubject<Pair<PresetModel, Int>> = PublishSubject.create()
-    override var ackFailedPublishSubject: PublishSubject<Boolean> = PublishSubject.create()
+    override var ackFailedPublishSubject: PublishSubject<Int> = PublishSubject.create()
+
+    override var toastPublishSubject: PublishSubject<String> = PublishSubject.create()
 
     var broadcastAddress: InetAddress
         get() {
@@ -66,9 +68,7 @@ public class UdpServiceImpl (val app: App, val socket: DatagramSocket): UdpServi
            while (isUsing) {
                socket.receive(packet)
                protoPacket = Fito.MessageUnion.parseFrom(packet.data.copyOf(packet.length))
-               mainHandler.post {
-                   Toast.makeText(app, protoPacket.toString(), Toast.LENGTH_SHORT).show()
-               }
+               toastPublishSubject.onNext(protoPacket.toString())
                parsePacket(protoPacket)
            }
             }.subscribeOn(Schedulers.io()).subscribe()
@@ -115,10 +115,8 @@ public class UdpServiceImpl (val app: App, val socket: DatagramSocket): UdpServi
             uploadLanSettingPublishSubject.onNext(Pair(LanSettingModel(packet.param.lanSetting.useDHCP, packet.param.lanSetting.ip, packet.param.lanSetting.mask, packet.param.lanSetting.gateware), packet.sysId))
         }
 
-
-
         if (packet.param.ack == FitoParam.Param.Ack.ACK_FAILED) {
-            ackFailedPublishSubject.onNext(true)
+            ackFailedPublishSubject.onNext(packet.sysId)
         }
     }
 

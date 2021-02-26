@@ -14,6 +14,6 @@ interface Repository{
     fun saveLamp(lampModel: LampModel): Long
     fun updateLamp(lampModel: LampModel)
     fun getLampByName(name: String): LampModel
-    fun getLampsByGardenNumber(garden_number: Long): List<LampModel>
+    fun getLampsByGardenNumber(garden_number: Long): List<LampModel>?
     fun saveGarden(gardenModel: GardenModel): Long
 }

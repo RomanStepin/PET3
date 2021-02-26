@@ -22,7 +22,9 @@ interface UdpService
     var uploadLanSettingPublishSubject: PublishSubject<Pair<LanSettingModel, Int>>
     var uploadMQTTAuthPublishSubject: PublishSubject<Pair<PresetModel, Int>>
 
-    var ackFailedPublishSubject: PublishSubject<Boolean>
+    var toastPublishSubject: PublishSubject<String>
+
+    var ackFailedPublishSubject: PublishSubject<Int>
 
     fun startUdpReceiver()
     fun stopUdpReceiver()

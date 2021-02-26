@@ -3,6 +3,7 @@ package com.example.pet3.presentation
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.pet3.App
 import com.example.pet3.R
@@ -16,6 +17,8 @@ import java.util.*
 class MainActivity : AppCompatActivity() {
 
     var viewModel: MainViewModel = MainViewModelImpl(App.instance)
+
+    var toast: Toast = Toast.makeText(App.instance.applicationContext, "base toast", Toast.LENGTH_LONG)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,15 +51,17 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
+        viewModel.toastLiveData.observe(this, {
+            toast.cancel()
+            toast = Toast.makeText(App.instance.applicationContext, it, Toast.LENGTH_LONG)
+            toast.show()
+        })
+
         button.setOnClickListener {
             Log.d("LOGGG", "|||||||")
             Log.d("LOGGG", "viewModel.loadProgram()")
             viewModel.createProgram(editTextTextProgramName.text.toString())
 
-        }
-
-        button2.setOnClickListener {
-            viewModel.uploadProgram(editTextTextLampId.text.toString().toInt(), editTextTextProgramName.text.toString())
         }
 
         buttonDownloadTime.setOnClickListener {
@@ -89,7 +94,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         buttonUploadProgramIntoGardenLamps.setOnClickListener {
-            viewModel.uploadProgramIntoGardenLamps(editTextTextLampId.text.toString().toInt(), editTextTextProgramName.text.toString().toLong(), editTextGardenNumber.text.toString().toLong())
+            viewModel.uploadProgramIntoGardenLamps(editTextTextProgramName.text.toString(), editTextGardenNumber.text.toString().toLong())
         }
 
 

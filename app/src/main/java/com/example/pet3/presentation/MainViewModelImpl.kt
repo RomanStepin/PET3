@@ -23,20 +23,37 @@ class MainViewModelImpl(app: App) : MainViewModel(app) {
     private var repository: Repository = App.repositoryComponent.getRepository()
 
 
-    private var answerDelay: Long = 3000
+    private var answerDelay: Long = 5000
 
     private var loadingPresetNumber = 0
     private var targetID = 1
 
     @Volatile
     var programModel: ProgramModel? = null
+    @Volatile
     var presetsArray: MutableList<Boolean> = mutableListOf()
+    @Volatile
+    var uploadLampsMap: MutableMap<Int, Pair<MutableList<Boolean>, Int>> = mutableMapOf()
+
+    var uploadLampsCount = 0
 
     init {
+
+        //  добавляю в базенку две лампы, номер грядки по умолчанию 1, одна - железка, вторая - телефон
+
+        Thread{
+            if (repository.getLampByName("name3") == null)
+                repository.saveLamp(LampModel().apply { id = 4516164; name = "name3"})
+                    //   if (repository.getLampByName("name1") == null)
+            //    repository.saveLamp(LampModel().apply { id = 5; name = "name1"})
+        }.start()
+
+
             val disposable1 = udpService.downloadPresetPublishSubject.subscribeOn(Schedulers.newThread()).subscribe {
-                if (it.second == targetID) {
-                    programModel!!.addPreset(it.first)
-                    presetsArray[it.first.number_in_program - 1] = true
+                if (it.second == targetID && !presetsArray[it.first.number_in_program - 1]) {
+
+                        programModel!!.addPreset(it.first)
+                        presetsArray[it.first.number_in_program - 1] = true
 
                     if (it.first.number_in_program == it.first.presets_count) {
                         App.STATE = States.HEARTBEAT
@@ -54,22 +71,32 @@ class MainViewModelImpl(app: App) : MainViewModel(app) {
             }
             disposables.add(disposable1)
 
-        val disposable2 = udpService.uploadPresetPublishSubject.subscribeOn(Schedulers.newThread()).subscribe {
-            if (it.second == targetID) {
-                presetsArray[it.first.number_in_program - 1] = true
+
+        val disposable2 = udpService.uploadPresetPublishSubject.subscribeOn(Schedulers.newThread()).subscribe @Synchronized {
+            if (uploadLampsMap.containsKey(it.second) && uploadLampsMap[it.second]!!.second + 1 == it.first.number_in_program) {
+                uploadLampsMap[it.second]!!.first[it.first.number_in_program - 1] = true
+                Log.d("LOGGG", "пресет загрузили № ${it.first.number_in_program} загрузили на лампу № ${it.second}")
 
                 if (it.first.number_in_program == it.first.presets_count) {
-                    App.STATE = States.HEARTBEAT
-                    Log.d("LOGGG", "все загрузили")
-                    uploadProgramLiveData.postValue(true)
+                    Log.d("LOGGG", "все загрузили на лампу ${it.second}")
+                    var all = true
+                    uploadLampsMap.forEach {
+                        if (it.value.first.contains(false)) {
+                            all = false
+                        }
+                    }
+                    if (all) {
+                        App.STATE = States.HEARTBEAT
+                        uploadProgramLiveData.postValue(true)
+                        Log.d("LOGGG", "ЗАгрузили все на все лампы")
+                    }
                 } else {
                     App.STATE = States.UPLOADING_PROGRAM
-                    loadingPresetNumber = it.first.number_in_program + 1
-                    presetsArray.add(false)
-                    Log.d("LOGGG", "пресет загрузили")
-                    uploadPreset(targetID)
+                    uploadLampsMap[it.second] = uploadLampsMap[it.second]!!.copy(second = uploadLampsMap[it.second]!!.second + 1)
+                    uploadPreset(it.second)
                 }
             }
+
         }
         disposables.add(disposable2)
 
@@ -79,7 +106,7 @@ class MainViewModelImpl(app: App) : MainViewModel(app) {
                 val format = SimpleDateFormat("dd:MM:yyyy:HH:mm:ss", Locale("en"))
                 val ll: Long = it.first.toLong() * 1000
                 val date = Date(ll)
-                var s =  format.format(date)
+                val s =  format.format(date)
                 Log.d("LOGGG", "время у нас $s    а в цифрах ${it.first}" )
             }
         }
@@ -91,7 +118,7 @@ class MainViewModelImpl(app: App) : MainViewModel(app) {
                 val format = SimpleDateFormat("dd:MM:yyyy:HH:mm:ss", Locale("en"))
                 val ll: Long = it.first.toLong() * 1000
                 val date = Date(ll)
-                var s =  format.format(date)
+                val s =  format.format(date)
                 Log.d("LOGGG", "загрузили время $s   а в цифрах ${it.first}")
             }
         }
@@ -130,12 +157,44 @@ class MainViewModelImpl(app: App) : MainViewModel(app) {
         disposables.add(disposable8)
 
         val disposable9 = udpService.ackFailedPublishSubject.subscribeOn(Schedulers.newThread()).subscribe {
-            if (it == true) {
-                App.STATE = States.HEARTBEAT
-                Log.d("LOGGG", "чета ошибочка кек мня мня" )
+            Log.d("LOGGG", "произошла чудовищная ошибка")
+
+            when(App.STATE) {
+                States.UPLOADING_PROGRAM -> {
+                    if (uploadLampsMap[it] != null) {
+                        uploadLampsMap[it]!!.first[uploadLampsMap[it]!!.second] = true
+
+                        if (uploadLampsMap[it]!!.second + 1 == uploadLampsMap[it]!!.first.size) {
+                            Log.d("LOGGG", "все загрузили на лампу ${it}")
+                            var all = true
+                            uploadLampsMap.forEach {
+                                if (it.value.first.contains(false)) {
+                                    all = false
+                                }
+                            }
+                            if (all) {
+                                App.STATE = States.HEARTBEAT
+                                uploadProgramLiveData.postValue(true)
+                                Log.d("LOGGG", "ЗАгрузили все на все лампы")
+                            }
+                        }
+                        else {
+                            Log.d("LOGGG", "грузим следующий после ошибки")
+                            uploadLampsMap[it] = uploadLampsMap[it]!!.copy(second = uploadLampsMap[it]!!.second + 1)
+                            uploadPreset(it)
+                        }
+                    }
+                }
             }
+
+          //  App.STATE = States.HEARTBEAT
         }
         disposables.add(disposable9)
+
+        val disposable10 = udpService.toastPublishSubject.subscribeOn(Schedulers.newThread()).subscribe {
+            toastLiveData.postValue(it)
+        }
+        disposables.add(disposable10)
     }
 
 
@@ -146,35 +205,6 @@ class MainViewModelImpl(app: App) : MainViewModel(app) {
         this.targetID = targetID
         presetsArray = mutableListOf(false)
         downloadPreset(targetID)
-    }
-
-    override fun uploadProgram(targetID: Int, programName: String) {
-        Thread {
-            programModel = repository.getProgramByName(programName)
-            if (programModel == null) {
-                uploadProgramLiveData.postValue(false)
-            } else {
-                loadingPresetNumber = 1
-                App.STATE = States.UPLOADING_PROGRAM
-                this.targetID = targetID
-                presetsArray = mutableListOf(false)
-                uploadPreset(targetID)
-            }
-        }.start()
-    }
-
-    override fun uploadPreset(targetID: Int) {
-        Thread{
-            val expectationPresetNumber = loadingPresetNumber
-            while(App.STATE == States.UPLOADING_PROGRAM) {
-                Thread.sleep(answerDelay)
-                if (presetsArray[expectationPresetNumber - 1] == false) {
-                    Log.d("LOGGG", "нет ответа, что пресет с номером $expectationPresetNumber дошел")
-                    udpService.uploadPreset(programModel!!.presets[loadingPresetNumber-1], targetID)
-                } else break
-            }
-        }.start()
-        udpService.uploadPreset(programModel!!.presets[loadingPresetNumber-1], targetID)
     }
 
     override fun downloadTime(targetID: Int) {
@@ -229,6 +259,23 @@ class MainViewModelImpl(app: App) : MainViewModel(app) {
         TODO("Not yet implemented")
     }
 
+    override fun downloadPreset(targetID: Int)
+    {
+        Thread{
+            val expectationPresetNumber = loadingPresetNumber
+            while(App.STATE == States.DOWNLOADING_PROGRAM) {
+                Thread.sleep(answerDelay)
+                if (presetsArray[expectationPresetNumber - 1] == false) {
+                    Log.d("LOGGG", "пресет с номером $expectationPresetNumber не пришел")
+                    udpService.downloadPreset(loadingPresetNumber, targetID)
+                } else break
+            }
+        }.start()
+        udpService.downloadPreset(loadingPresetNumber, targetID)
+    }
+
+
+
     override fun uploadTime(time: Int, targetID: Int) {
         App.STATE = States.UPLOADING_TIME
         this.targetID = targetID
@@ -281,30 +328,64 @@ class MainViewModelImpl(app: App) : MainViewModel(app) {
         TODO("Not yet implemented")
     }
 
-    override fun uploadProgramIntoGardenLamps(targetID: Int, programNumber: Long, gardenNumber: Long) {
+    override fun uploadPreset(targetID: Int) {
         Thread{
-            val lamps: List<LampModel>? = repository.getLampsByGardenNumber(gardenNumber)
-            if (lamps == null) {
-                uploadProgramIntoGardenLampsLiveData.postValue(StatesObservable.REPOSITORY_FAILED)
-            }
-
-        }.start()
-
-    }
-
-    override fun downloadPreset(targetID: Int)
-    {
-        Thread{
-            val expectationPresetNumber = loadingPresetNumber
-            while(App.STATE == States.DOWNLOADING_PROGRAM) {
+            val expectationPresetNumber = uploadLampsMap[targetID]!!.second
+            while(App.STATE == States.UPLOADING_PROGRAM) {
                 Thread.sleep(answerDelay)
-                if (presetsArray[expectationPresetNumber - 1] == false) {
-                    Log.d("LOGGG", "пресет с номером $expectationPresetNumber не пришел")
-                    udpService.downloadPreset(loadingPresetNumber, targetID)
+                if (!uploadLampsMap[targetID]!!.first[expectationPresetNumber] && App.STATE == States.UPLOADING_PROGRAM) {
+                    Log.d("LOGGG", "нет ответа, что пресет с номером " + programModel!!.presets[uploadLampsMap[targetID]!!.second].number_in_program + " дошел до лампы  $targetID")
+                    Log.d("LOGGG", "кидаем пресет № " + programModel!!.presets[uploadLampsMap[targetID]!!.second].number_in_program + " на лампу  $targetID")
+                    udpService.uploadPreset(programModel!!.presets[uploadLampsMap[targetID]!!.second], targetID)
                 } else break
             }
         }.start()
-        udpService.downloadPreset(loadingPresetNumber, targetID)
+        udpService.uploadPreset(programModel!!.presets[uploadLampsMap[targetID]!!.second], targetID)
+        Log.d("LOGGG", "кидаем пресет № " + programModel!!.presets[uploadLampsMap[targetID]!!.second].number_in_program + " на лампу  $targetID")
+    }
+
+    override fun uploadProgramIntoGardenLamps(programName: String, gardenNumber: Long) {
+
+
+
+
+        Thread{
+            programModel = repository.getProgramByName(programName)
+            if (programModel == null) {
+                uploadProgramIntoGardenLampsLiveData.postValue(StatesObservable.REPOSITORY_FAILED)
+            } else {
+
+                val lamps: List<LampModel>? = repository.getLampsByGardenNumber(gardenNumber)
+                if (lamps == null) {
+                    uploadProgramIntoGardenLampsLiveData.postValue(StatesObservable.REPOSITORY_FAILED)
+                } else {
+                    App.STATE = States.UPLOADING_PROGRAM
+
+                    Thread{
+                        var delay = 0
+                        while(App.STATE == States.UPLOADING_PROGRAM) {
+                            Thread.sleep(1000)
+                            delay += 1
+                            if (delay == 15 && App.STATE == States.UPLOADING_PROGRAM) {
+                                App.STATE = States.HEARTBEAT
+                                Log.d("LOGGG", "одна или несколько ламп не отвечают")
+                                break
+                            }
+                        }
+                    }.start()
+
+                    lamps.forEach {
+                        val presetsList = mutableListOf<Boolean>()
+                        programModel!!.presets.forEach {
+                            presetsList.add(false)
+                        }
+                        uploadLampsMap.put(it.id, Pair(presetsList , 0))
+                        uploadPreset(it.id)
+                    }
+                }
+            }
+        }.start()
+
     }
 
     @Synchronized

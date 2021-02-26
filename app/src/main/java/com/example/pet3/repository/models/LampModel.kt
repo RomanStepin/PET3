@@ -7,7 +7,7 @@ import androidx.room.PrimaryKey
 class LampModel {
     @PrimaryKey(autoGenerate = true)
     var number: Long = 0
-    var id: Long = 0;
+    var id: Int = 0;
     var name: String = "name"
     var garden_number: Long = 1
     var program_number: Long = 1

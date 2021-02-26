@@ -22,13 +22,12 @@ abstract class MainViewModel(app: App) : AndroidViewModel(app) {
     abstract fun downloadLanSetting(targetID: Int)
     abstract fun downloadMQTTAuth(targetID: Int)
 
-    abstract fun uploadProgram(targetID: Int, programName: String)
     abstract fun uploadPreset(targetID: Int)
     abstract fun uploadTime(time: Int, targetID: Int)
     abstract fun uploadWifiAuth(ssid: String, password: String, targetID: Int)
     abstract fun uploadLanSetting(lanSettingModel: LanSettingModel, targetID: Int)
     abstract fun uploadMQTTAuth(mqttLogin: String, mqttPassword: String, targetID: Int)
-    abstract fun uploadProgramIntoGardenLamps(targetID: Int, programNumber: Long, gardenNumber: Long)
+    abstract fun uploadProgramIntoGardenLamps(programName: String, gardenNumber: Long)
 
 
     abstract fun createProgram(name: String)
@@ -37,7 +36,7 @@ abstract class MainViewModel(app: App) : AndroidViewModel(app) {
 
     var createdProgramLiveData: MutableLiveData<Boolean> = MutableLiveData()
 
-    var getLampsByGardenNumberLiveData: MutableLiveData<Pair<List<LampModel>, StatesObservable>> = MutableLiveData()
+    var getLampsByGardenNumberLiveData: MutableLiveData<Pair<List<LampModel>?, StatesObservable>> = MutableLiveData()
 
     var downloadPresetLiveData: MutableLiveData<PresetModel> = MutableLiveData()
     var downloadProgramLiveData: MutableLiveData<Boolean> = MutableLiveData()
@@ -52,6 +51,8 @@ abstract class MainViewModel(app: App) : AndroidViewModel(app) {
     var uploadWifiAuthLiveData: MutableLiveData<Boolean> = MutableLiveData()
     var uploadLanSettingLiveData: MutableLiveData<Boolean> = MutableLiveData()
     var uploadMQTTAuthLiveData: MutableLiveData<Boolean> = MutableLiveData()
+
+    var toastLiveData: MutableLiveData<String> = MutableLiveData()
 
     var uploadProgramIntoGardenLampsLiveData: MutableLiveData<StatesObservable> = MutableLiveData()
 }

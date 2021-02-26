@@ -22,5 +22,5 @@ interface LampDao {
     fun getLampByName(name: String): LampModel
 
     @Query("SELECT * FROM LampModel WHERE garden_number = :garden_number")
-    fun getLampsByGardenNumber(garden_number: Long): List<LampModel>
+    fun getLampsByGardenNumber(garden_number: Long): List<LampModel>?
 }

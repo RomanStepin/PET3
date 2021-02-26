@@ -72,7 +72,7 @@ class RepositoryImpl(app: App): Repository {
         return lampDao.getLampByName(name)
     }
 
-    override fun getLampsByGardenNumber(garden_number: Long): List<LampModel> {
+    override fun getLampsByGardenNumber(garden_number: Long): List<LampModel>? {
         return lampDao.getLampsByGardenNumber(garden_number)
     }
 
